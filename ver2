@@ -1,0 +1,1076 @@
+import random
+import math
+import csv
+import time
+
+# TODO: File name change, select txt file                DONE
+# TODO: delete users from txt                            DONE
+# TODO: can read all txt / print txt                     DONE
+# TODO: Use w+ mode                                      DONE         BUT NOT USED
+# TODO: Random player teams                              DONE
+# TODO: Auto-fill                                        DONE
+# TODO: Ranked teams                                     NOT DONE     YUNUS
+# TODO: Match teams with Rank points                     NOT DONE     ???
+# TODO: Secondary roles                                  NOT DONE     YUNUS
+# TODO: text output                                      DONE
+# TODO: csv create add                                   DONE
+
+menu = """
+Bilkent LoL E-Sport Team Finder by Can Gürsu and Yunus Özkan!
+
+-This program is created to find teams for players. %%%%%%%%%%%%%%%%%
+
+Command List:
+-Type 'menu' to bring this command menu.
+
+-Type 'txt' to change/create the text file. Only enter the name of the file, 
+not the (.) extension. Ex: not 'players.txt' --> 'players'
+-Type 'csv' to select a csv file to use its data. The program will ask to 
+create a new text file or add data to existing text file. Only enter the name of the file, 
+not the (.) extension. Ex: not 'tourney_input.csv' --> 'tourney_input'
+
+-Type 'see' to see raw text file for all player roles/names.
+-Type 'number' to see numbered version of text file for all player roles/names.
+
+-Type 'add' to enter additional players to the player list. Type the player roles and names. --> Ex: 'ADC Can'
+-Type 'stop' to exit from player inputting.
+-Type 'del' to delete players using the 'number' command and typing their player number.
+
+-Type 'start' to create teams. Players are put only on their primary roles. 
+NO secondary roles, NO auto-fills, NO rank consideration.
+
+-Type 'start autofill' to create teams. Maximum number of players are put on their primary roles, 
+left over players are auto-filled. 
+NO secondary roles, Auto-filled players, NO rank consideration.
+
+-Type 'start ps autofill'
+Secondary roles, Auto-filled players, NO rank consideration.
+
+-Type 'start ranked'
+NO secondary roles, NO Auto-filled players, Rank consideration.
+
+-Type 'quit' to exit from program.
+"""
+
+
+def numbered_print(file):
+    result = ""
+    file_handler = open(file, "r")
+    for el, start_num in enumerate(file_handler.readlines(), 1):
+        start_num = start_num.strip()
+
+        result += "{} {}\n".format(el, start_num)
+    file_handler.close()
+
+    return result
+
+
+print(menu)
+
+txt_file_fullname = ""
+txt_or_csv = input("Start with txt or csv file? ")
+txt_or_csv = txt_or_csv.lower()
+while txt_or_csv != 'quit':
+    if txt_or_csv.strip() == "txt":
+        txt_default = input("Enter text file name to begin!(Ex: 'players'): ")
+        txt_default_fullname = str(txt_default) + ".txt"
+        txt_file_fullname = txt_default_fullname
+        txt_file_print_fullname = "'{}' will be created/opened and used.".format(txt_file_fullname)
+        print(txt_file_print_fullname)
+        print('')
+        break
+
+    elif txt_or_csv.strip() == "csv":
+        csv_file_name = input("Enter a csv file to read roles/nicknames from!(Ex: 'tourney5docs'): ")
+        csv_file_fullname = str(csv_file_name) + ".csv"
+        csv_file_print_fullname = "'{}' will be opened and its information used.".format(csv_file_fullname)
+        print(csv_file_print_fullname)
+        print('')
+
+        csv_file = open(csv_file_fullname, "r")
+        csv_reader = csv.reader(csv_file)
+
+        next(csv_reader)
+
+        csv_add_or_create = input("Create a new text file or add information to an existing text file?('create' "
+                                  "or 'add') ")
+        while True:
+            if csv_add_or_create.lower() == "create":
+                csv_to_txt_output_name = input(
+                    "Enter a text file name to transfer player data from csv file!(Ex: 'tourney5docs'): ")
+                csv_to_txt_output_fullname = csv_to_txt_output_name + ".txt"
+                csv_to_txt_print_output = "'{}' will be opened and its information used.".format(
+                    csv_to_txt_output_fullname)
+                print(csv_to_txt_print_output)
+                print('')
+
+                csv_to_txt_output_file = open(csv_to_txt_output_fullname, "w")
+                for line in csv_reader:
+                    csv_to_txt_output_file.write(str(line[1]).lower() + " " + line[2] + "\n")
+                break
+
+            elif csv_add_or_create.lower() == "add":
+                csv_to_txt_output_name = input(
+                    "Enter a text file name to add player data to existing file from a csv file!(Ex: 'tourney5docs'): ")
+                csv_to_txt_output_fullname = csv_to_txt_output_name + ".txt"
+                csv_to_txt_print_output = "'{}' will be opened and its information used.".format(
+                    csv_to_txt_output_fullname)
+                print(csv_to_txt_print_output)
+                print('')
+
+                csv_to_txt_output_file = open(csv_to_txt_output_fullname, "a")
+                for line in csv_reader:
+                    csv_to_txt_output_file.write(str(line[1]).lower() + " " + line[2] + "\n")
+                break
+
+            else:
+                print('Invalid input type!')
+                csv_add_or_create = input("Create a new text file or add information to an existing text file? ")
+
+        csv_to_txt_output_file.close()
+        csv_file.close()
+        break
+
+    else:
+        print('Invalid input type!')
+        txt_or_csv = input("Start with txt or csv file? ")
+        txt_or_csv = txt_or_csv.lower()
+
+if txt_or_csv != 'quit':
+    main_loop_inp = input('Enter Command: ')
+    main_loop_inp = main_loop_inp.lower()
+else:
+    main_loop_inp = 'quit'
+
+while main_loop_inp != 'quit':
+
+    top = []
+    jg = []
+    mid = []
+    adc = []
+    sup = []
+
+    sec_top = []
+    sec_jg = []
+    sec_mid = []
+    sec_adc = []
+    sec_sup = []
+
+    rank_top = [0]
+    rank_jg = [0]
+    rank_mid = [0]
+    rank_adc = [0]
+    rank_sup = [0]
+
+    if main_loop_inp.strip() == 'txt':
+        file_name = input("Use another text file!(Ex: 'tourney2'): ")
+        txt_file_fullname = str(file_name) + ".txt"
+        txt_file_print_fullname = "'{}' will be created/opened and used.".format(txt_file_fullname)
+        print(txt_file_print_fullname)
+        print('')
+
+    # Create TXT File with new name if there is none
+    # player_data = open(txt_file_fullname, "w+")
+    # player_data.close()
+    # THIS IS NOT USED
+
+    try:
+        player_data_is_exist = open(txt_file_fullname, "r")
+        player_data_is_exist.close()
+    except FileNotFoundError:
+        player_data_is_exist = open(txt_file_fullname, "w")
+        player_data_is_exist.close()
+
+    # Check if file is empty
+    player_data_if_empty = open(txt_file_fullname, "r")
+    content = player_data_if_empty.readline()
+    if content == "":
+        no_content = True
+    else:
+        no_content = False
+    player_data_if_empty.close()
+
+    # Make Sure TXT ends with \n in an old file
+    if not no_content:
+        new_line = False
+        player_data_if_ends_correct = open(txt_file_fullname, "r")
+        last_line = (list(player_data_if_ends_correct)[-1])
+
+        if last_line[-1:] == '\n':
+            new_line = True
+        else:
+            new_line = False
+        player_data_if_ends_correct.close()
+
+        player_data_if_ends_correct = open(txt_file_fullname, "a")
+        if not new_line:
+            player_data_if_ends_correct.write('\n')
+        player_data_if_ends_correct.close()
+
+    # Read Data
+    player_data_read = open(txt_file_fullname, "r")
+
+    has_rank = False
+    rank_point = 0
+
+    for player in player_data_read:
+        pos_primary_after = player.find(' ')
+        pos_rank_before = player.rfind(' ')
+        if player[pos_primary_after + 1: len(player) - 1] != player[pos_rank_before + 1: len(player) - 1]:
+            has_rank = True
+
+        # Without Rank
+        if player[:pos_primary_after].lower() == 'top':
+            top.append(player[pos_primary_after + 1: len(player) - 1])
+        elif player[:pos_primary_after].lower() == 'jg':
+            jg.append(player[pos_primary_after + 1: len(player) - 1])
+        elif player[:pos_primary_after].lower() == 'mid':
+            mid.append(player[pos_primary_after + 1: len(player) - 1])
+        elif player[:pos_primary_after].lower() == 'adc':
+            adc.append(player[pos_primary_after + 1: len(player) - 1])
+        elif player[:pos_primary_after].lower() == 'sup':
+            sup.append(player[pos_primary_after + 1: len(player) - 1])
+
+        # Calculate Rank
+        if has_rank:
+            if player[pos_rank_before + 1: len(player) - 1].lower() == 'iron':
+                rank_point = 1
+            elif player[pos_rank_before + 1: len(player) - 1].lower() == 'bronze':
+                rank_point = 2
+            elif player[pos_rank_before + 1: len(player) - 1].lower() == 'silver':
+                rank_point = 3
+            elif player[pos_rank_before + 1: len(player) - 1].lower() == 'gold':
+                rank_point = 4
+            elif player[pos_rank_before + 1: len(player) - 1].lower() == 'platinum':
+                rank_point = 5
+            elif player[pos_rank_before + 1: len(player) - 1].lower() == 'diamond':
+                rank_point = 6
+            elif player[pos_rank_before + 1: len(player) - 1].lower() == 'master':
+                rank_point = 7
+            elif player[pos_rank_before + 1: len(player) - 1].lower() == 'grandmaster':
+                rank_point = 8
+            elif player[pos_rank_before + 1: len(player) - 1].lower() == 'challenger':
+                rank_point = 9
+
+        # With Rank
+        if has_rank:
+            if player[:pos_primary_after].lower() == 'top':
+                rank_top.append(player[pos_primary_after + 1: pos_rank_before] + " " + str(rank_point))
+            elif player[:pos_primary_after].lower() == 'jg':
+                rank_jg.append(player[pos_primary_after + 1: pos_rank_before] + " " + str(rank_point))
+            elif player[:pos_primary_after].lower() == 'mid':
+                rank_mid.append(player[pos_primary_after + 1: pos_rank_before] + " " + str(rank_point))
+            elif player[:pos_primary_after].lower() == 'adc':
+                rank_adc.append(player[pos_primary_after + 1: pos_rank_before] + " " + str(rank_point))
+            elif player[:pos_primary_after].lower() == 'sup':
+                rank_sup.append(player[pos_primary_after + 1: pos_rank_before] + " " + str(rank_point))
+
+    player_data_read.close()
+
+    # Menu
+    if main_loop_inp.strip() == 'menu':
+        print(menu)
+
+    # Ask for additional input
+    elif main_loop_inp.strip() == 'add':
+
+        player_data_add = open(txt_file_fullname, "a")
+
+        print('')
+        addition = input("Add 'Role Name': ")
+
+        while addition.lower() != "stop":
+
+            # Input Validation
+            valid = addition.find(' ')
+            if addition[:valid].lower() == 'top':
+                player_data_add.write(addition + "\n")
+            elif addition[:valid].lower() == 'jg':
+                player_data_add.write(addition + "\n")
+            elif addition[:valid].lower() == 'mid':
+                player_data_add.write(addition + "\n")
+            elif addition[:valid].lower() == 'adc':
+                player_data_add.write(addition + "\n")
+            elif addition[:valid].lower() == 'sup':
+                player_data_add.write(addition + "\n")
+            else:
+                print('Invalid Role!')
+
+            addition = input("Add 'Role Name': ")
+
+        player_data_add.close()
+
+        print('')
+
+    # See TXT File RAW
+    elif main_loop_inp.strip() == 'see':
+        player_data = open(txt_file_fullname, "r")
+        for line in player_data:
+            content = line.strip()
+            print(content)
+        print('')
+        player_data.close()
+
+    # See TXT File Numbered
+    elif main_loop_inp.strip() == 'number':
+        print(numbered_print(txt_file_fullname))
+
+    # TXT Input
+    elif main_loop_inp.strip() == 'txt':
+        pass
+
+    # CSV File
+    elif main_loop_inp.strip() == 'csv':
+        csv_file_name = input("Enter a csv file to read roles/nicknames from!(Ex: 'tourney5docs'): ")
+        csv_file_fullname = str(csv_file_name) + ".csv"
+        csv_file_print_fullname = "'{}' will be opened and its information used.".format(csv_file_fullname)
+        print(csv_file_print_fullname)
+        print('')
+
+        csv_file = open(csv_file_fullname, "r")
+        csv_reader = csv.reader(csv_file)
+
+        next(csv_reader)
+
+        csv_add_or_create = input(
+            "Create a new text file or add information to an existing text file?('create' or 'add') ")
+        while True:
+            if csv_add_or_create.lower() == "create":
+                csv_to_txt_output_name = input(
+                    "Enter a text file name to transfer player data from csv file!(Ex: 'tourney5docs'): ")
+                csv_to_txt_output_fullname = csv_to_txt_output_name + ".txt"
+                csv_to_txt_print_output = "'{}' will be opened and its information used.".format(
+                    csv_to_txt_output_fullname)
+                print(csv_to_txt_print_output)
+                print('')
+
+                csv_to_txt_output_file = open(csv_to_txt_output_fullname, "w")
+                for line in csv_reader:
+                    csv_to_txt_output_file.write(str(line[1]).lower() + " " + line[2] + "\n")
+                break
+
+            elif csv_add_or_create.lower() == "add":
+                csv_to_txt_output_name = input(
+                    "Enter a text file name to add player data to existing file from a csv file!(Ex: 'tourney5docs'): ")
+                csv_to_txt_output_fullname = csv_to_txt_output_name + ".txt"
+                csv_to_txt_print_output = "'{}' will be opened and its information used.".format(
+                    csv_to_txt_output_fullname)
+                print(csv_to_txt_print_output)
+                print('')
+
+                csv_to_txt_output_file = open(csv_to_txt_output_fullname, "a")
+                for line in csv_reader:
+                    csv_to_txt_output_file.write(str(line[1]).lower() + " " + line[2] + "\n")
+                break
+
+            else:
+                print('Invalid input type!')
+                csv_add_or_create = input("Create a new text file or add information to an existing text file? ")
+
+        csv_to_txt_output_file.close()
+        csv_file.close()
+        break
+
+    # Deleting players
+    elif main_loop_inp.strip() == 'del':
+        delete_players = open(txt_file_fullname, "r")
+
+        temp_list = []
+        del_list = []
+
+        del_pl = input("Enter player numbers to delete, separated by spaces: ")
+        for j in del_pl.split():
+            del_list.append(j)
+        del_list.sort(reverse=True)
+
+        for line in delete_players:
+            temp_list.append(line.strip())
+
+        for i in del_list:
+            try:
+                temp_list.pop(int(i) - 1)
+            except IndexError:
+                print('There is no player with number {}'.format(i))
+
+        delete_players.close()
+
+        new_file = open(txt_file_fullname, "w")
+        for k in temp_list:
+            new_file.write(k + '\n')
+
+        new_file.close()
+
+    # Create Teams W/O AutoFill
+    elif main_loop_inp.strip() == 'start':
+
+        is_output_text_wanted = False
+        output_text_name = ""
+        ask_output_text_bool = input('Write the results to a text file? (yes or no): ')
+        while ask_output_text_bool.lower() != 'quit':
+            if ask_output_text_bool.lower() == 'yes':
+                output_text_name = input("Enter a file name to output team data (Ex: 'output'): ")
+                output_text_fullname = output_text_name + ".txt"
+                print("'{}' will be created/opened and team data will be written on it."
+                      .format(output_text_fullname))
+                is_output_text_wanted = True
+                break
+            elif ask_output_text_bool.lower() == 'no':
+                print('No output file.')
+                is_output_text_wanted = False
+                break
+            else:
+                print('Invalid input!')
+            ask_output_text_bool = input('Write the results to a text file? (yes or no): ')
+
+        result_text = ""
+        max_team_num = min(len(top), len(jg), len(mid), len(adc), len(sup))
+
+        result_text += "\n" + 'Max team number is ' + str(max_team_num) + "\n\n"
+
+        for num in range(1, max_team_num + 1):
+            # t = random.randint(0, len(top) - 1)
+            t = random.randint(0, len(top) - 1) if len(top) > 1 else 0
+            j = random.randint(0, len(jg) - 1) if len(jg) > 1 else 0
+            m = random.randint(0, len(mid) - 1) if len(mid) > 1 else 0
+            a = random.randint(0, len(adc) - 1) if len(adc) > 1 else 0
+            s = random.randint(0, len(sup) - 1) if len(sup) > 1 else 0
+
+            result_text += "Team {}\nTop    : {}\nJg     : {}\nMid    : {}\nADC    : {}\nSup    : {} \n\n"\
+                .format(num, top[t], jg[j], mid[m], adc[a], sup[s])
+
+            top.pop(t)
+            jg.pop(j)
+            mid.pop(m)
+            adc.pop(a)
+            sup.pop(s)
+
+        result_text += "Left Players: \n"
+
+        # Number of roles
+        number_of_top, number_of_jg, number_of_mid, number_of_adc, number_of_sup = 0, 0, 0, 0, 0
+        for top in top:
+            result_text += "Top    : {}\n".format(top)
+            number_of_top += 1
+        for jg in jg:
+            result_text += "Jg     : {}\n".format(jg)
+            number_of_jg += 1
+        for mid in mid:
+            result_text += "Mid    : {}\n".format(mid)
+            number_of_mid += 1
+        for adc in adc:
+            result_text += "ADC    : {}\n".format(adc)
+            number_of_adc += 1
+        for sup in sup:
+            result_text += "Sup    : {}\n".format(sup)
+            number_of_sup += 1
+
+        # Number of Remaining Roles to Create Perfect Teams
+        potential_max = max(number_of_top, number_of_jg, number_of_mid, number_of_adc, number_of_sup)
+        remaining_top, remaining_jg, remaining_mid, remaining_adc, remaining_sup = potential_max - number_of_top, \
+            potential_max - number_of_jg, potential_max - number_of_mid, potential_max - number_of_adc, \
+            potential_max - number_of_sup
+
+        if (number_of_top and number_of_jg and number_of_mid and number_of_adc and number_of_sup) == 0:
+
+            result_text += "\n{} Top, {} Jungle, {} Mid, {} ADC, {} Support players are not in a team.\n".format(
+                number_of_top, number_of_jg, number_of_mid, number_of_adc, number_of_sup)
+
+            result_text += "\n{} Top, {} Jungle, {} Mid, {} ADC, {} Support players are not in a team.\n".format(
+                number_of_top, number_of_jg, number_of_mid, number_of_adc, number_of_sup)
+
+            result_text += 'No Auto-Fills! All players are in their primary roles!'
+
+        else:
+            result_text += "\nNo leftover players.\nNo Auto-Fills! All players are in their primary roles!"
+
+        print(result_text)
+        print('')
+
+        if is_output_text_wanted:
+            output_text_name = output_text_name + ".txt"
+            result_output_file = open(output_text_name, "w")
+            result_output_file.write(result_text)
+            result_output_file.close()
+        else:
+            pass
+
+    # Create Teams W AutoFill
+    elif main_loop_inp == 'start autofill':
+
+        is_output_text_wanted = False
+        output_text_name = ""
+        ask_output_text_bool = input('Write the results to a text file? (yes or no): ')
+        while ask_output_text_bool.lower() != 'quit':
+            if ask_output_text_bool.lower() == 'yes':
+                output_text_name = input("Enter a file name to output team data (Ex: 'output'): ")
+                output_text_fullname = output_text_name + ".txt"
+                print("'{}' will be created/opened and team data will be written on it."
+                      .format(output_text_fullname))
+                is_output_text_wanted = True
+                break
+            elif ask_output_text_bool.lower() == 'no':
+                print('No output file.')
+                is_output_text_wanted = False
+                break
+            else:
+                print('Invalid input!')
+            ask_output_text_bool = input('Write the results to a text file? (yes or no): ')
+
+        result_text = ""
+        max_team_num_w_af = (len(top) + len(jg) + len(mid) + len(adc) + len(sup)) // 5
+
+        number_of_top, number_of_jg, number_of_mid, number_of_adc, number_of_sup = len(top), len(jg), len(mid), \
+            len(adc), len(sup)
+        remaining_top, remaining_jg, remaining_mid, remaining_adc, remaining_sup = 0, 0, 0, 0, 0
+        fit_top, fit_jg, fit_mid, fit_adc, fit_sup = 0, 0, 0, 0, 0
+
+        # Fit number of roles // Number of Remaining additional roles
+        if number_of_top >= max_team_num_w_af:
+            fit_top = max_team_num_w_af
+            remaining_top = number_of_top - fit_top
+        else:
+            fit_top = number_of_top
+            remaining_top = 0
+
+        if number_of_jg >= max_team_num_w_af:
+            fit_jg = max_team_num_w_af
+            remaining_jg = number_of_jg - fit_jg
+        else:
+            fit_jg = number_of_jg
+            remaining_jg = 0
+
+        if number_of_mid >= max_team_num_w_af:
+            fit_mid = max_team_num_w_af
+            remaining_mid = number_of_mid - fit_mid
+        else:
+            fit_mid = number_of_mid
+            remaining_mid = 0
+
+        if number_of_adc >= max_team_num_w_af:
+            fit_adc = max_team_num_w_af
+            remaining_adc = number_of_adc - fit_adc
+        else:
+            fit_adc = number_of_adc
+            remaining_adc = 0
+
+        if number_of_sup >= max_team_num_w_af:
+            fit_sup = max_team_num_w_af
+            remaining_sup = number_of_sup - fit_sup
+        else:
+            fit_sup = number_of_sup
+            remaining_sup = 0
+
+        players_on_role = fit_top + fit_jg + fit_mid + fit_adc + fit_sup
+        players_auto_filled = max_team_num_w_af * 5 - players_on_role
+        auto_fills_for_each_game = players_auto_filled / max_team_num_w_af
+        out_of_game = remaining_top + remaining_jg + remaining_mid + remaining_adc + remaining_sup - players_auto_filled
+
+        # print(number_of_top, number_of_jg, number_of_mid, number_of_adc, number_of_sup)
+        # print(fit_top, fit_jg, fit_mid, fit_adc, fit_sup)
+        # print(remaining_top, remaining_jg, remaining_mid, remaining_adc, remaining_sup)
+
+        result_text += "\nMax team number with auto-fills is " + str(max_team_num_w_af) + "\n{} players on role, {} " \
+                       "players auto-filled, and {} players out of game\n".format(players_on_role, players_auto_filled,
+                                                                                  out_of_game)
+
+        af_floor = math.floor(auto_fills_for_each_game)
+        af_ceil = math.ceil(auto_fills_for_each_game)
+
+        if players_auto_filled % max_team_num_w_af == 0:
+            result_text += "{} auto-filled players for each team\n\n".format(int(auto_fills_for_each_game))
+        else:
+            result_text += "{} or {} auto-filled players for each team\n\n".format(af_floor, af_ceil)
+
+        auto_fill_list = []
+
+        if remaining_top != 0:
+            for i in range(remaining_top):
+                t = random.randint(0, len(top) - 1) if len(top) > 1 else 0
+                auto_fill_list.append("top " + top[t])
+                top.pop(t)
+        if remaining_jg != 0:
+            for i in range(remaining_jg):
+                j = random.randint(0, len(jg) - 1) if len(jg) > 1 else 0
+                auto_fill_list.append("jg " + jg[j])
+                jg.pop(j)
+        if remaining_mid != 0:
+            for i in range(remaining_mid):
+                m = random.randint(0, len(mid) - 1) if len(mid) > 1 else 0
+                auto_fill_list.append("mid " + mid[m])
+                mid.pop(m)
+        if remaining_adc != 0:
+            for i in range(remaining_adc):
+                a = random.randint(0, len(adc) - 1) if len(adc) > 1 else 0
+                auto_fill_list.append("adc " + adc[a])
+                adc.pop(a)
+        if remaining_sup != 0:
+            for i in range(remaining_sup):
+                s = random.randint(0, len(sup) - 1) if len(sup) > 1 else 0
+                auto_fill_list.append("sup " + sup[s])
+                sup.pop(s)
+
+        team_number = max_team_num_w_af
+        teams = [[0] for i in range(max_team_num_w_af)]
+
+        # print(top, jg, mid, adc, sup)
+        # print(auto_fill_list)
+        # print(teams)
+        # print('')
+
+        # Role numbers
+        fix_top, fix_jg, fix_mid, fix_adc, fix_sup = 1, 2, 3, 4, 5
+
+        # First available list
+        first_available = 0
+        for i in range(max_team_num_w_af):
+            if teams[i][0] < af_ceil:
+                first_available = i
+                break
+
+        # Top AutoFill
+        if max_team_num_w_af == fit_top:
+            for i in range(max_team_num_w_af):
+                rand_num = random.randint(0, len(top) - 1)
+                teams[i].append(top[rand_num])
+                top.pop(rand_num)
+        elif max_team_num_w_af > fit_top:
+            for i in range(first_available, first_available + max_team_num_w_af - fit_top):
+                if teams[i][0] < af_ceil:
+                    rand_num = random.randint(0, len(auto_fill_list) - 1)
+                    teams[i].append(auto_fill_list[rand_num])
+                    teams[i][0] = teams[i][0] + 1
+                    auto_fill_list.pop(rand_num)
+            for j in range(max_team_num_w_af):
+                try:
+                    hello = teams[j][fix_top]
+                except IndexError:
+                    rand_num = random.randint(0, len(top) - 1)
+                    teams[j].append(top[rand_num])
+                    top.pop(rand_num)
+
+        # First available list
+        for i in range(max_team_num_w_af):
+            if teams[i][0] < af_ceil:
+                first_available = i
+                break
+
+        # Jungle AutoFill
+        if max_team_num_w_af == fit_top:
+            for i in range(max_team_num_w_af):
+                rand_num = random.randint(0, len(jg) - 1)
+                teams[i].append(jg[rand_num])
+                jg.pop(rand_num)
+        elif max_team_num_w_af > fit_jg:
+            for i in range(first_available, first_available + max_team_num_w_af - fit_jg):
+                if teams[i][0] < af_ceil:
+                    rand_num = random.randint(0, len(auto_fill_list) - 1)
+                    teams[i].append(auto_fill_list[rand_num])
+                    teams[i][0] = teams[i][0] + 1
+                    auto_fill_list.pop(rand_num)
+            for j in range(max_team_num_w_af):
+                try:
+                    hello = teams[j][fix_jg]
+                except IndexError:
+                    rand_num = random.randint(0, len(jg) - 1)
+                    teams[j].append(jg[rand_num])
+                    jg.pop(rand_num)
+
+        # First available list
+        for i in range(max_team_num_w_af):
+            if teams[i][0] < af_ceil:
+                first_available = i
+                break
+
+        # Middle AutoFill
+        if max_team_num_w_af == fit_mid:
+            for i in range(max_team_num_w_af):
+                rand_num = random.randint(0, len(mid) - 1)
+                teams[i].append(mid[rand_num])
+                mid.pop(rand_num)
+        elif max_team_num_w_af > fit_mid:
+            for i in range(first_available, first_available + max_team_num_w_af - fit_mid):
+                if teams[i][0] < af_ceil:
+                    rand_num = random.randint(0, len(auto_fill_list) - 1)
+                    teams[i].append(auto_fill_list[rand_num])
+                    teams[i][0] = teams[i][0] + 1
+                    auto_fill_list.pop(rand_num)
+            for j in range(max_team_num_w_af):
+                try:
+                    hello = teams[j][fix_mid]
+                except IndexError:
+                    rand_num = random.randint(0, len(mid) - 1)
+                    teams[j].append(mid[rand_num])
+                    mid.pop(rand_num)
+
+        # First available list
+        for i in range(max_team_num_w_af):
+            if teams[i][0] < af_ceil:
+                first_available = i
+                break
+
+        # ADC AutoFill
+        if max_team_num_w_af == fit_adc:
+            for i in range(max_team_num_w_af):
+                rand_num = random.randint(0, len(adc) - 1)
+                teams[i].append(adc[rand_num])
+                adc.pop(rand_num)
+        elif max_team_num_w_af > fit_adc:
+            for i in range(first_available, first_available + max_team_num_w_af - fit_adc):
+                if teams[i][0] < af_ceil:
+                    rand_num = random.randint(0, len(auto_fill_list) - 1)
+                    teams[i].append(auto_fill_list[rand_num])
+                    teams[i][0] = teams[i][0] + 1
+                    auto_fill_list.pop(rand_num)
+            for j in range(max_team_num_w_af):
+                try:
+                    hello = teams[j][fix_adc]
+                except IndexError:
+                    rand_num = random.randint(0, len(adc) - 1)
+                    teams[j].append(adc[rand_num])
+                    adc.pop(rand_num)
+
+        # First available list
+        for i in range(max_team_num_w_af):
+            if teams[i][0] < af_ceil:
+                first_available = i
+                break
+
+        # Support AutoFill
+        if max_team_num_w_af == fit_sup:
+            for i in range(max_team_num_w_af):
+                rand_num = random.randint(0, len(sup) - 1)
+                teams[i].append(sup[rand_num])
+                sup.pop(rand_num)
+        elif max_team_num_w_af > fit_sup:
+            for i in range(first_available, first_available + max_team_num_w_af - fit_sup):
+                if teams[i][0] < af_ceil:
+                    rand_num = random.randint(0, len(auto_fill_list) - 1)
+                    teams[i].append(auto_fill_list[rand_num])
+                    teams[i][0] = teams[i][0] + 1
+                    auto_fill_list.pop(rand_num)
+            for j in range(max_team_num_w_af):
+                try:
+                    hello = teams[j][fix_sup]
+                except IndexError:
+                    rand_num = random.randint(0, len(sup) - 1)
+                    teams[j].append(sup[rand_num])
+                    sup.pop(rand_num)
+
+        # print(teams)
+        # print(auto_fill_list)
+
+        for k in range(0, max_team_num_w_af):
+            player1, player2, player3, player4, player5 = teams[k][1], teams[k][2], teams[k][3], teams[k][4], teams[k][5]
+            player_list = [player1, player2, player3, player4, player5]
+            show_list = []
+
+            for player in player_list:
+
+                player = str(player)
+                af_pos = player.find(' ')
+                if player[:af_pos].lower() == 'top':
+                    player = player[af_pos + 1: len(player)] + " (Auto-Fill Top)"
+                elif player[:af_pos].lower() == 'jg':
+                    player = player[af_pos + 1: len(player)] + " (Auto-Fill Jungle)"
+                elif player[:af_pos].lower() == 'mid':
+                    player = player[af_pos + 1: len(player)] + " (Auto-Fill Mid)"
+                elif player[:af_pos].lower() == 'adc':
+                    player = player[af_pos + 1: len(player)] + " (Auto-Fill ADC)"
+                elif player[:af_pos].lower() == 'sup':
+                    player = player[af_pos + 1: len(player)] + " (Auto-Fill Support)"
+                show_list.append(player)
+
+            result_text += "Team {}\nTop    : {}\nJg     : {}\nMid    : {}\nADC    : {}\nSup    : {}\n\n"\
+                .format(k + 1, show_list[0], show_list[1], show_list[2], show_list[3], show_list[4])
+
+        if len(auto_fill_list) > 0:
+            result_text += "Leftover players:\n"
+            for i in auto_fill_list:
+                result_text += str(i) + "\n"
+
+        print(result_text)
+
+        if is_output_text_wanted:
+            output_text_name = output_text_name + ".txt"
+            result_output_file = open(output_text_name, "w")
+            result_output_file.write(result_text)
+            result_output_file.close()
+        else:
+            pass
+
+    # Create Teams W AutoFill + Secondary
+    elif main_loop_inp == 'start ps autofill':
+        print('This module is not available!')
+        pass
+
+    # Create Teams Ranked
+    elif main_loop_inp == 'start ranked':
+
+        if len(rank_top) == 1 or len(rank_jg) == 1 or len(rank_mid) == 1 or len(rank_adc) == 1 or len(rank_sup) == 1:
+            print('Not all players have rankings or No ranks were inputted! Can not create ranked teams!')
+            print('')
+        else:
+
+            is_output_text_wanted = False
+            output_text_name = ""
+            ask_output_text_bool = input('Write the results to a text file? (yes or no): ')
+            while ask_output_text_bool.lower() != 'quit':
+                if ask_output_text_bool.lower() == 'yes':
+                    output_text_name = input("Enter a file name to output team data (Ex: 'output'): ")
+                    output_text_fullname = output_text_name + ".txt"
+                    print("'{}' will be created/opened and team data will be written on it."
+                          .format(output_text_fullname))
+                    is_output_text_wanted = True
+                    break
+                elif ask_output_text_bool.lower() == 'no':
+                    print('No output file.')
+                    is_output_text_wanted = False
+                    break
+                else:
+                    print('Invalid input!')
+                ask_output_text_bool = input('Write the results to a text file? (yes or no): ')
+
+            print('')
+
+            tolerance = input("Enter a tolerance level between 1-3 (DEFAULT: 2)(Type 'no' to use default): ")
+            while tolerance != "no":
+                if tolerance == "1":
+                    break
+                elif tolerance == "2":
+                    break
+                elif tolerance == "3":
+                    break
+                else:
+                    print("Tolerance number not within boundaries!")
+                    tolerance = int(input("Enter a tolerance level between 1-3 (DEFAULT: 2): "))
+
+            if tolerance == "no":
+                tolerance = 2
+
+            tolerance = int(tolerance)
+
+            result_text = ""
+
+            max_team_num = min(len(rank_top), len(rank_jg), len(rank_mid), len(rank_adc), len(rank_sup))
+            max_team_num -= 1
+
+            result_text += "\nMax team number is {}\n\n".format(max_team_num)
+
+            # Get Rid Of Additional Players
+            if len(rank_top) > max_team_num:
+                for num in range(len(rank_top) - max_team_num - 1):
+                    t = random.randint(1, len(rank_top) - 1) if len(rank_top) > 2 else 1
+                    rank_top.pop(t)
+
+            if len(rank_jg) > max_team_num:
+                for num in range(len(rank_jg) - max_team_num - 1):
+                    j = random.randint(1, len(rank_jg) - 1) if len(rank_jg) > 2 else 1
+                    rank_jg.pop(j)
+
+            if len(rank_mid) > max_team_num:
+                for num in range(len(rank_mid) - max_team_num - 1):
+                    m = random.randint(1, len(rank_mid) - 1) if len(rank_mid) > 2 else 1
+                    rank_mid.pop(m)
+
+            if len(rank_adc) > max_team_num:
+                for num in range(len(rank_adc) - max_team_num - 1):
+                    a = random.randint(1, len(rank_adc) - 1) if len(rank_adc) > 2 else 1
+                    rank_adc.pop(a)
+
+            if len(rank_sup) > max_team_num:
+                for num in range(len(rank_sup) - max_team_num - 1):
+                    s = random.randint(1, len(rank_sup) - 1) if len(rank_sup) > 2 else 1
+                    rank_sup.pop(s)
+
+            # Sum of all Rank points
+            sum_rank = 0
+            for i in range(1, max_team_num + 1):
+                rank_top[0] += int(rank_top[i][-1:])
+                rank_jg[0] += int(rank_jg[i][-1:])
+                rank_mid[0] += int(rank_mid[i][-1:])
+                rank_adc[0] += int(rank_adc[i][-1:])
+                rank_sup[0] += int(rank_sup[i][-1:])
+
+            sum_rank = rank_top[0] + rank_jg[0] + rank_mid[0] + rank_adc[0] + rank_sup[0]
+            all_player_list = [rank_top, rank_jg, rank_mid, rank_adc, rank_sup]
+            temp_all_player_list = all_player_list
+            avg_rank_per_team = sum_rank / max_team_num
+            # tolerance = 2 DEFAULT TOLERANCE
+
+            # print(sum_rank, avg_rank_per_team, tolerance)
+
+            teams = [[0] for i in range(max_team_num)]
+
+            # print(rank_top, rank_jg, rank_mid, rank_adc, rank_sup)
+
+            found_team = False
+            found_team_count = 0
+            no_possible_teams = False
+            left_team_number = max_team_num
+            while (found_team_count != max_team_num) and (not no_possible_teams):
+                found_team = False
+                top_player_counter, jg_player_counter, mid_player_counter, adc_player_counter, sup_player_counter = 1, 1, 1, 1, 1
+
+                while not found_team and not no_possible_teams:
+                    current_rank_sum = 0
+                    current_rank_sum += int(temp_all_player_list[0][top_player_counter][-1:]) + \
+                                        int(temp_all_player_list[1][jg_player_counter][-1:]) + \
+                                        int(temp_all_player_list[2][mid_player_counter][-1:]) + \
+                                        int(temp_all_player_list[3][adc_player_counter][-1:]) + \
+                                        int(temp_all_player_list[4][sup_player_counter][-1:])
+
+                    # print(current_rank_sum)
+                    # print(temp_all_player_list)
+                    # print(teams)
+
+                    if avg_rank_per_team - tolerance <= current_rank_sum <= avg_rank_per_team + tolerance:
+                        found_team = True
+                        found_team_count += 1
+                        left_team_number -= 1
+
+                        temp_all_player_list[0][0] -= int(temp_all_player_list[0][top_player_counter][-1:])
+                        teams[found_team_count - 1].append(temp_all_player_list[0][top_player_counter])
+                        teams[found_team_count - 1][0] += int(temp_all_player_list[0][top_player_counter][-1:])
+                        temp_all_player_list[0].pop(top_player_counter)
+
+                        temp_all_player_list[1][0] -= int(temp_all_player_list[1][jg_player_counter][-1:])
+                        teams[found_team_count - 1].append(temp_all_player_list[1][jg_player_counter])
+                        teams[found_team_count - 1][0] += int(temp_all_player_list[1][jg_player_counter][-1:])
+                        temp_all_player_list[1].pop(jg_player_counter)
+
+                        temp_all_player_list[2][0] -= int(temp_all_player_list[2][mid_player_counter][-1:])
+                        teams[found_team_count - 1].append(temp_all_player_list[2][mid_player_counter])
+                        teams[found_team_count - 1][0] += int(temp_all_player_list[2][mid_player_counter][-1:])
+                        temp_all_player_list[2].pop(mid_player_counter)
+
+                        temp_all_player_list[3][0] -= int(temp_all_player_list[3][adc_player_counter][-1:])
+                        teams[found_team_count - 1].append(temp_all_player_list[3][adc_player_counter])
+                        teams[found_team_count - 1][0] += int(temp_all_player_list[3][adc_player_counter][-1:])
+                        temp_all_player_list[3].pop(adc_player_counter)
+
+                        temp_all_player_list[4][0] -= int(temp_all_player_list[4][sup_player_counter][-1:])
+                        teams[found_team_count - 1].append(temp_all_player_list[4][sup_player_counter])
+                        teams[found_team_count - 1][0] += int(temp_all_player_list[4][sup_player_counter][-1:])
+                        temp_all_player_list[4].pop(sup_player_counter)
+
+                        # print('found team')
+
+                    else:
+                        # print('not found')
+                        if top_player_counter + 1 > left_team_number:
+                            no_possible_teams = True
+                        elif jg_player_counter + 1 > left_team_number:
+                            top_player_counter += 1
+                            jg_player_counter, adc_player_counter, sup_player_counter = 1, 1, 1
+                        elif mid_player_counter + 1 > left_team_number:
+                            jg_player_counter += 1
+                            mid_player_counter, adc_player_counter, sup_player_counter = 1, 1, 1
+                        elif adc_player_counter + 1 > left_team_number:
+                            mid_player_counter += 1
+                            adc_player_counter, sup_player_counter = 1, 1
+                        elif sup_player_counter + 1 > left_team_number:
+                            adc_player_counter += 1
+                            sup_player_counter = 1
+                        elif sup_player_counter != left_team_number:
+                            sup_player_counter += 1
+                        elif top_player_counter == 1 and jg_player_counter == 1 and mid_player_counter == 1 and adc_player_counter == 1 and sup_player_counter == 1:
+                            # print('no condition')
+                            no_possible_teams = True
+
+                    # print(top_player_counter, jg_player_counter, mid_player_counter, adc_player_counter,
+                    # sup_player_counter)
+
+                    # print('sleep for 3 seconds')
+                    # print('')
+                    # time.sleep(3)
+
+                # print(temp_all_player_list)
+
+            # print(teams)
+            # print(temp_all_player_list)
+            # print(all_player_list)
+            # print(rank_top, rank_adc)
+
+            result_text += "Rankings: Iron:1, Bronze:2, Silver:3, Gold:4, Platinum:5,\n"
+            result_text += "Diamond:6, Master:7, Grandmaster:8, Challenger:9.\n\n"
+            result_text += "Average Rank Points per team: {:.2f}\n".format(avg_rank_per_team)
+            result_text += "All teams are within the tolerance number of: ±{}\n\n".format(tolerance)
+
+            if not no_possible_teams:
+                result_text += "All players that will be put on a team: \n"
+
+                for top in range(max_team_num):
+                    result_text += "Top    : {}\n".format(teams[top][1])
+                for jg in range(max_team_num):
+                    result_text += "Jg     : {}\n".format(teams[jg][2])
+                for mid in range(max_team_num):
+                    result_text += "Mid    : {}\n".format(teams[mid][3])
+                for adc in range(max_team_num):
+                    result_text += "ADC    : {}\n".format(teams[adc][4])
+                for sup in range(max_team_num):
+                    result_text += "Sup    : {}\n".format(teams[sup][5])
+
+                result_text += "\n"
+
+            if no_possible_teams:
+                result_text += 'Start another queue, program could not find optimal teams!\n'
+            else:
+                for k in range(max_team_num):
+
+                    player1, player2, player3, player4, player5 = teams[k][1], teams[k][2], teams[k][3], teams[k][4], \
+                                                                  teams[k][5]
+                    player_list = [player1, player2, player3, player4, player5]
+                    show_list = []
+
+                    for player in player_list:
+
+                        player = str(player)
+                        af_pos = player.find(' ')
+                        if player[-1:] == '1':
+                            player = player[:af_pos + 1] + "Iron"
+                        elif player[-1:] == '2':
+                            player = player[:af_pos + 1] + "Bronze"
+                        elif player[-1:] == '3':
+                            player = player[:af_pos + 1] + "Silver"
+                        elif player[-1:] == '4':
+                            player = player[:af_pos + 1] + "Gold"
+                        elif player[-1:] == '5':
+                            player = player[:af_pos + 1] + "Platinum"
+                        elif player[-1:] == '6':
+                            player = player[:af_pos + 1] + "Diamond"
+                        elif player[-1:] == '7':
+                            player = player[:af_pos + 1] + "Master"
+                        elif player[-1:] == '8':
+                            player = player[:af_pos + 1] + "Grandmaster"
+                        elif player[-1:] == '9':
+                            player = player[:af_pos + 1] + "Challenger"
+                        show_list.append(player)
+
+                    result_text += "Team {}\nTop    : {}\nJg     : {}\nMid    : {}\nADC    : {}\nSup    : {}\n" \
+                                   "Total Rank Point    : {}\n\n" \
+                        .format(k + 1, show_list[0], show_list[1], show_list[2], show_list[3], show_list[4], teams[k][0])
+
+                result_text += "All {} players are on their primary roles!\n".format(max_team_num * 5)
+                result_text += "NO Auto-Fills! NO Secondary Roles!\n"
+                result_text += "Most equal teams are created with respect to rankings of the players!\n"
+
+            print(result_text)
+
+            if is_output_text_wanted:
+                output_text_name = output_text_name + ".txt"
+                result_output_file = open(output_text_name, "w")
+                result_output_file.write(result_text)
+                result_output_file.close()
+            else:
+                pass
+
+    # Else
+    else:
+        print('Invalid Command!')
+        print('')
+
+    main_loop_inp = input('Enter Command: ')
+    main_loop_inp = main_loop_inp.lower()
+
+print('Good Bye!')
+time.sleep(2)
