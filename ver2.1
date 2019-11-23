@@ -1,0 +1,257 @@
+import random
+import csv
+import time
+
+menu = ""
+
+def raw_print(txt_file):
+    """
+    Take some .txt file and print the players in it.
+    """
+    result = ""
+    with open(txt_file, "r") as file_handler:
+        for line in file_handler:
+            if line != "\n":
+                result += "{}\n".format(line.strip())
+
+    return result
+
+def numbered_print(txt_file):
+    """
+    Take some .txt file and print the players with numbers next to them.
+    """
+    result = ""
+    with open(txt_file, "r") as file_handler:
+        for start_num, el in enumerate(file_handler.readlines(), 1):
+            if el != "\n":
+                el = el.strip()
+                result += "{} {}\n".format(start_num, el)
+    return result
+           
+
+def convert_to_type_fullname(file_type):
+    """
+    Take some file name and make it name.txt or name.csv
+    """
+    if file_type == "txt":
+        usr_inp_txt = input("Enter text file name to look player data from!(Ex: 'players'): ")
+        full_name = str(usr_inp_txt) + ".txt"
+        print("'{}' will be created/opened and used.\n".format(full_name))
+   
+    elif file_type == "csv":
+        usr_inp_csv = input("Enter a csv file to read roles/nicknames from!(Ex: 'tourney5docs'): ")
+        full_name = str(usr_inp_csv) + ".csv"
+        print("'{}' will be opened and its information used.\n".format(full_name))
+   
+    return full_name
+   
+   
+def convert_csv_to_txt(mode):
+    """
+    Take a csv file name, convert it to name.csv
+    Open that csv file and add its content to a txt file.
+    During the process, create a new txt file or add to an existing one.
+    """
+    usr_inp_txt = input("Enter a text file name to transfer player data from csv file!(Ex: 'tourney5docs'): ")
+    full_name = str(usr_inp_txt) + ".txt"
+    print("'{}' will be opened!\n".format(full_name))
+               
+    csv_full_file_name = convert_to_csv_fullname()
+       
+    with open(csv_full_file_name, "r") as csv_file:
+        csv_reader = csv.reader(csv_file)
+        next(csv_reader)
+       
+        with open(full_name, mode) as output_text:
+            for line in csv_reader:
+                output_text.write(str(line[1]).lower() + " " + line[2] + "\n")
+               
+        if mode == "w":
+            result = "Player data from the csv file transferred to {} successfully!".format(full_name)
+        elif mode == "a":
+            result = "Player data from the csv file added to {} successfully!".format(full_name)
+   
+    return result
+   
+   
+def is_empty(txt_file):
+    """
+    Check if a txt file is empty
+    """
+    with open(txt_file, "r") as player_data:
+        content = player_data.read()
+        if content == "":
+            return True
+        return False
+
+def end_with_newline(txt_file):
+    """
+    If an existing file does not end with a newline, add one.
+    """
+    new_line = False
+    with open(txt_file, "r") as player_data:
+        last_line = (list(player_data)[-1])
+
+        if last_line[-1:] == '\n':
+            new_line = True
+        else:
+            new_line = False
+
+    with open(txt_file, "a") as player_data:
+        if not new_line:
+            player_data.write('\n')
+
+print(menu)
+
+full_file_name = ""
+txt_or_csv = input("Start with txt or csv file? ")
+while True:
+    if txt_or_csv.lower() == "txt":        
+        full_file_name = convert_to_type_fullname("txt")
+        break
+
+    elif txt_or_csv.lower() == "csv":
+        csv_add_create = input("Create a new text file or add information to an existing text file?('create' or 'add') ")
+        while True:
+            if csv_add_create.lower() == "create":
+                print(convert_csv_to_txt("w"))
+                break
+
+            elif csv_add_create.lower() == "add":
+                print(convert_csv_to_txt("a"))
+                break
+
+            else:
+                print('Invalid input type!')
+                csv_add_create = input("Create a new text file or add information to an existing text file? ")
+        break
+
+    else:
+        print('Invalid input type!')
+        txt_or_csv = input("Start with txt or csv file? ")
+
+inp = input('Enter Command: ')
+
+while inp.lower() != 'quit':
+
+    top = []
+    jg = []
+    mid = []
+    adc = []
+    sup = []
+
+    if inp.lower() == 'txt':
+        full_file_name = convert_to_type_fullname("txt")
+       
+
+    # Create TXT File with new name if there is none
+    try:
+        with open(full_file_name, "r") as player_data:
+            
+    except FileNotFoundError:
+        with open(full_file_name, "w") as player_data:
+
+    # Check if file is empty
+    # Make Sure TXT ends with \n in an old file
+    if not is_empty(full_file_name):
+        end_with_newline(full_file_name)
+              
+    # Read Data
+    with open(full_file_name, "r") as player_data:
+
+        for player in player_data:
+            pos = player.find(' ')
+            if player[:pos].lower() == 'top':
+                top.append(player[pos + 1: len(player) - 1])
+            elif player[:pos].lower() == 'jg':
+                jg.append(player[pos + 1: len(player) - 1])
+            elif player[:pos].lower() == 'mid':
+                mid.append(player[pos + 1: len(player) - 1])
+            elif player[:pos].lower() == 'adc':
+                adc.append(player[pos + 1: len(player) - 1])
+            elif player[:pos].lower() == 'sup':
+                sup.append(player[pos + 1: len(player) - 1])
+
+    # Menu
+    if inp.lower() == 'menu':
+        print(menu)
+
+    # Ask for additional input
+    elif inp.lower() == 'add':
+
+        print('')
+        addition = input("Add 'Role Name': ")
+
+        while addition.lower() != "stop":
+
+            with open(full_file_name, "a") as player_data:
+
+                # Input Validation
+                valid = addition.find(' ')
+                if addition[:valid].lower() == 'top':
+                    player_data.write(addition + "\n")
+                elif addition[:valid].lower() == 'jg':
+                    player_data.write(addition + "\n")
+                elif addition[:valid].lower() == 'mid':
+                    player_data.write(addition + "\n")
+                elif addition[:valid].lower() == 'adc':
+                    player_data.write(addition + "\n")
+                elif addition[:valid].lower() == 'sup':
+                    player_data.write(addition + "\n")
+                else:
+                    print('Invalid Role!')
+
+                addition = input("Add 'Role Name': ")
+
+        print('')
+
+    # See TXT File RAW
+    elif inp.lower() == 'see':
+        print(raw_print(full_file_name))
+
+    # See TXT File Numbered
+    elif inp.lower() == 'number':
+        print(numbered_print(full_file_name))
+
+    # TXT Input
+    elif inp.lower() == 'txt':
+        pass
+
+    # CSV File
+    elif inp.lower() == 'csv':
+        pass
+
+    # Deleting players
+    elif inp.lower() == 'del':
+        with open(full_file_name, "r") as delete_players:
+
+            temp_list = []
+            del_list = []
+
+            del_pl = input("Enter player numbers to delete, separated by spaces: ")
+            for j in del_pl.split():
+                del_list.append(j)
+            del_list.sort(reverse=True)
+
+            for line in delete_players:
+                temp_list.append(line.strip())
+
+            for i in del_list:
+                try:
+                    temp_list.pop(int(i) - 1)
+                except IndexError:
+                    print('There is no player with number {}'.format(i))
+
+        with open(full_file_name, "w") as new_file:
+            for k in temp_list:
+                new_file.write(k + '\n')
+
+    # Else
+    else:
+        print('Invalid Command!')
+        print('')
+
+    inp = input('Enter Command: ')
+
+print('Good Bye!')
+time.sleep(2)
